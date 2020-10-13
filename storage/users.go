@@ -25,9 +25,7 @@ type userService struct {
 	pwResetService pwResetService
 	PwPepper       string
 }
-type userStore struct {
-	goafweb.UserDB
-}
+
 type userValidator struct {
 	goafweb.UserDB
 	hmac     hash.HMAC
@@ -53,19 +51,28 @@ func NewUserService(db *gorm.DB, userPwPepper, hmacSecretKey string) goafweb.Use
 	}
 }
 
+// checkErr is a helper function to check dependency errors and convert them to
+// app scoped errors where appropriate.
+func checkErr(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return goafweb.ErrNotFound
+	}
+	return fmt.Errorf("Database error: %v", err)
+}
+
 // GetByID retrieves a User from the DB using the unique ID for lookup.
 // ID provided must be greater than 0.
 func (uv *userValidator) GetByID(id int) (*goafweb.User, error) {
 	user := &goafweb.User{ID: id}
 	if err := runUserValFuncs(user, uv.isGreaterThan(0)); err != nil {
-		return nil, fmt.Errorf("Error: %w", err)
+		return nil, fmt.Errorf("Validation Error: %w", err)
 	}
 	return uv.UserDB.GetByID(user.ID)
 }
 
 func (udb *userDB) GetByID(id int) (*goafweb.User, error) {
 	var user goafweb.User
-	err := udb.gorm.First(&user, id).Error
+	err := checkErr(udb.gorm.First(&user, id).Error)
 	return &user, err
 }
 
@@ -73,14 +80,14 @@ func (udb *userDB) GetByID(id int) (*goafweb.User, error) {
 func (uv *userValidator) GetByEmail(email string) (*goafweb.User, error) {
 	user := &goafweb.User{Email: email}
 	if err := runUserValFuncs(user, uv.emailNormalize, uv.emailRequired, uv.emailFormat); err != nil {
-		return nil, fmt.Errorf("Error: %w", err)
+		return nil, fmt.Errorf("Validation Error: %w", err)
 	}
 	return uv.UserDB.GetByEmail(user.Email)
 }
 
 func (udb *userDB) GetByEmail(email string) (*goafweb.User, error) {
 	var user goafweb.User
-	err := udb.gorm.Where("email = ?", email).First(&user).Error
+	err := checkErr(udb.gorm.Where("email = ?", email).First(&user).Error)
 	return &user, err
 }
 
@@ -89,14 +96,14 @@ func (udb *userDB) GetByEmail(email string) (*goafweb.User, error) {
 func (uv *userValidator) GetByRemember(token string) (*goafweb.User, error) {
 	user := &goafweb.User{RememberToken: token}
 	if err := runUserValFuncs(user, uv.rememberHashRequired); err != nil {
-		return nil, fmt.Errorf("Error: %w", err)
+		return nil, fmt.Errorf("Validation Error: %w", err)
 	}
 	return uv.UserDB.GetByRemember(user.RememberHash)
 }
 
 func (udb *userDB) GetByRemember(token string) (*goafweb.User, error) {
 	var user goafweb.User
-	err := udb.gorm.Where("remember_hash = ?", token).First(&user).Error
+	err := checkErr(udb.gorm.Where("remember_hash = ?", token).First(&user).Error)
 	return &user, err
 }
 
@@ -116,14 +123,14 @@ func (uv *userValidator) Create(user *goafweb.User) error {
 		uv.setRememberToken,
 		uv.rememberHashRequired,
 	); err != nil {
-		return fmt.Errorf("Error: %w", err)
+		return fmt.Errorf("Validation Error: %w", err)
 	}
 
 	return uv.UserDB.Create(user)
 
 }
 func (udb *userDB) Create(user *goafweb.User) error {
-	return udb.gorm.Create(user).Error
+	return checkErr(udb.gorm.Create(user).Error)
 }
 
 // Update updates an existing record in the database.
@@ -138,12 +145,12 @@ func (uv *userValidator) Update(user *goafweb.User) error {
 		uv.passwordHashRequired,
 		uv.rememberHashRequired,
 	); err != nil {
-		return fmt.Errorf("Error: %w", err)
+		return fmt.Errorf("Validation Error: %w", err)
 	}
 	return uv.UserDB.Update(user)
 }
 func (udb *userDB) Update(user *goafweb.User) error {
-	return udb.gorm.Save(user).Error
+	return checkErr(udb.gorm.Save(user).Error)
 }
 
 // Authenticate will match a users email/password to an exisiting database record and call Login() if details are correct.
@@ -151,14 +158,14 @@ func (udb *userDB) Update(user *goafweb.User) error {
 func (us *userService) Authenticate(email, password string) (*goafweb.User, error) {
 	user, err := us.GetByEmail(email)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Auth error - user not found")
-		}
-		return nil, err
+		return nil, fmt.Errorf("Could not retreive user: %w", err)
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password+us.PwPepper))
 	if err != nil {
-		return nil, errors.New("Auth error - password not accepted")
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return nil, goafweb.ErrPWInvalid
+		}
+		return nil, fmt.Errorf("Could not authenticate: %v", err)
 	}
 	return user, nil
 }
@@ -171,11 +178,12 @@ func (us *userService) InitiatePWReset(email string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Could not retreive user: %w", err)
 	}
+
 	pwr := pwReset{
 		UserID: user.ID,
 	}
 	if err := us.pwResetService.Create(&pwr); err != nil {
-		return "", err
+		return "", fmt.Errorf("Unable to create reset token: %w", err)
 	}
 	return pwr.Token, nil
 }
@@ -185,7 +193,7 @@ func (us *userService) InitiatePWReset(email string) (string, error) {
 func (us *userService) CompletePWReset(token, newPw string) (*goafweb.User, error) {
 	pwr, err := us.pwResetService.GetByToken(token)
 	if err != nil {
-		return nil, fmt.Errorf("Token not valid: %w", err)
+		return nil, fmt.Errorf("Unble to retreive reset data: %w", err)
 	}
 
 	if time.Now().Sub(pwr.CreatedAt) > (12 * time.Hour) {
@@ -193,11 +201,11 @@ func (us *userService) CompletePWReset(token, newPw string) (*goafweb.User, erro
 	}
 	user, err := us.GetByID(pwr.UserID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to reset password: %w", err)
 	}
 	user.Password = newPw
 	if err = us.Update(user); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to reset password: %w", err)
 	}
 	us.pwResetService.Delete(pwr.ID)
 	return user, nil
@@ -239,7 +247,7 @@ func (uv *userValidator) emailIsAvail(user *goafweb.User) error {
 	_, err := uv.GetByEmail(user.Email)
 	if err != nil {
 		// If ErrRecordNotFound then email address is available
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, goafweb.ErrNotFound) {
 			return nil
 		}
 		// Any other errors suggests db error and gets returned.
@@ -254,7 +262,7 @@ func (uv *userValidator) setRememberToken(user *goafweb.User) error {
 	}
 	token, err := rand.RememberToken()
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to generate token: %w", err)
 	}
 	user.RememberToken = token
 	return nil
@@ -309,7 +317,10 @@ func (uv *userValidator) passwordBcrypt(user *goafweb.User) error {
 	}
 	pwhash, err := bcrypt.GenerateFromPassword([]byte(user.Password+uv.PwPepper), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return goafweb.ErrPWInvalid
+		}
+		return fmt.Errorf("Could not hash password: %v", err)
 	}
 	user.PasswordHash = string(pwhash)
 	user.Password = ""

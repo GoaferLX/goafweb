@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"goafweb"
 	"strings"
 
@@ -36,26 +37,26 @@ func (av *articleValidator) Create(article *goafweb.Article) error {
 		av.contentRequired,
 		av.authorRequired,
 	); err != nil {
-		return err
+		return fmt.Errorf("Validation Error: %w", err)
 	}
 	return av.ArticleDB.Create(article)
 }
 
 func (adb *articleDB) Create(article *goafweb.Article) error {
-	return adb.gorm.Create(article).Error
+	return checkErr(adb.gorm.Create(article).Error)
 }
 
 func (av *articleValidator) GetArticleByID(id int) (*goafweb.Article, error) {
 	article := &goafweb.Article{ID: id}
 	if err := runArticleValFuncs(article, av.idGreaterThan0); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Validation Error: %w", err)
 	}
 	return av.ArticleDB.GetArticleByID(article.ID)
 }
 
 func (adb *articleDB) GetArticleByID(id int) (*goafweb.Article, error) {
 	var article goafweb.Article
-	err := adb.gorm.First(&article, id).Error
+	err := checkErr(adb.gorm.First(&article, id).Error)
 	return &article, err
 }
 
@@ -63,32 +64,32 @@ func (adb *articleDB) GetArticlesByUser(authorID int) ([]goafweb.Article, error)
 	var articles []goafweb.Article
 
 	results := adb.gorm.Where("author = ?", authorID)
-	if err := results.Find(&articles).Error; err != nil {
+	if err := checkErr(results.Find(&articles).Error); err != nil {
 		return nil, err
 	}
 	return articles, nil
 }
 func (av *articleValidator) Update(article *goafweb.Article) error {
 	if err := runArticleValFuncs(article, av.idGreaterThan0, av.authorRequired, av.titleRequired); err != nil {
-		return err
+		return fmt.Errorf("Validation Error: %w", err)
 	}
 	return av.ArticleDB.Update(article)
 }
 func (adb *articleDB) Update(article *goafweb.Article) error {
-	return adb.gorm.Save(article).Error
+	return checkErr(adb.gorm.Save(article).Error)
 }
 
 func (av *articleValidator) Delete(id int) error {
 	article := goafweb.Article{ID: id}
 	if err := runArticleValFuncs(&article, av.idGreaterThan0); err != nil {
-		return err
+		return fmt.Errorf("Validation Error: %w", err)
 	}
 	return av.ArticleDB.Delete(article.ID)
 }
 
 func (adb *articleDB) Delete(id int) error {
 	article := goafweb.Article{ID: id}
-	return adb.gorm.Delete(&article).Error
+	return checkErr(adb.gorm.Delete(&article).Error)
 }
 
 type articleValFunc func(article *goafweb.Article) error

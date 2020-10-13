@@ -46,16 +46,16 @@ func newPWResetService(db *gorm.DB, hmac hash.HMAC) pwResetService {
 func (pwrv *pwResetValidator) GetByToken(token string) (*pwReset, error) {
 	pwr := &pwReset{Token: token}
 	if err := runPWResetValFuncs(pwr, pwrv.tokenHashRequired); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Validation Error: %w", err)
 	}
 	return pwrv.pwResetService.GetByToken(pwr.TokenHash)
 
 }
 func (pwrdb *pwResetDB) GetByToken(tokenHash string) (*pwReset, error) {
 	var pwr pwReset
-	err := pwrdb.gorm.Where("token_hash = ?", tokenHash).First(&pwr).Error
+	err := checkErr(pwrdb.gorm.Where("token_hash = ?", tokenHash).First(&pwr).Error)
 	if err != nil {
-		return nil, fmt.Errorf("Could not retreive token: %w", err)
+		return nil, err
 	}
 	return &pwr, nil
 }
@@ -63,17 +63,17 @@ func (pwrdb *pwResetDB) GetByToken(tokenHash string) (*pwReset, error) {
 func (pwrv *pwResetValidator) Create(pwr *pwReset) error {
 	token, err := rand.RememberToken()
 	if err != nil {
-		return fmt.Errorf("Could not create a Reset Token: %w", err)
+		return fmt.Errorf("Unable to create reset token: %w", err)
 	}
 	pwr.Token = token
 	if err := runPWResetValFuncs(pwr, pwrv.idRequired, pwrv.tokenHashRequired); err != nil {
-		return err
+		return fmt.Errorf("Validation Error: %w", err)
 	}
 	return pwrv.pwResetService.Create(pwr)
 }
 
 func (pwrdb *pwResetDB) Create(pwr *pwReset) error {
-	return pwrdb.gorm.Create(pwr).Error
+	return checkErr(pwrdb.gorm.Create(pwr).Error)
 }
 
 func (pwrv *pwResetValidator) Delete(id int) error {
@@ -85,7 +85,7 @@ func (pwrv *pwResetValidator) Delete(id int) error {
 
 func (pwrdb *pwResetDB) Delete(id int) error {
 	pwr := pwReset{ID: id}
-	return pwrdb.gorm.Delete(&pwr).Error
+	return checkErr(pwrdb.gorm.Delete(&pwr).Error)
 }
 
 func runPWResetValFuncs(pwr *pwReset, fns ...pwrValFunc) error {
