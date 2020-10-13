@@ -54,10 +54,13 @@ func NewUserService(db *gorm.DB, userPwPepper, hmacSecretKey string) goafweb.Use
 // checkErr is a helper function to check dependency errors and convert them to
 // app scoped errors where appropriate.
 func checkErr(err error) error {
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return goafweb.ErrNotFound
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return goafweb.ErrNotFound
+		}
+		return fmt.Errorf("Database error: %v", err)
 	}
-	return fmt.Errorf("Database error: %v", err)
+	return nil
 }
 
 // GetByID retrieves a User from the DB using the unique ID for lookup.
