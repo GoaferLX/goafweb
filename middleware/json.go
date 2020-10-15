@@ -50,7 +50,7 @@ func (mw *jsonAuthMW) CheckUser(next http.Handler) http.Handler {
 
 // RequireUser will check that a user is set in the request context.
 // It if is, the requested handler will be called.
-// If not,  the server responsds with a http.StatusUnauthorized header and further execution is stopped.
+// If not,  the server responds with a http.StatusUnauthorized header and further execution is stopped.
 func (mw *jsonAuthMW) RequireUser(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := context.GetUser(r.Context())
