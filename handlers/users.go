@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"goafweb"
 	"goafweb/context"
 	"goafweb/rand"
 	"net/http"
-	"time"
 )
 
 type userHandler struct {
@@ -50,29 +50,43 @@ func (uh *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login processes a users login attempt, authenticates the User and logs them in or returns an error.
+// It expects the authentication request to come via an Basic Authorization header.
+// It processes the header and authenticates the user.
+// It returns http.StatusUnauthorized if header is not set or authentication details are incorrect,
+// otherwise returns http.StatusOK and a RememberToken.
 // POST /login
-// TODO: Authorization: Basic header
 func (uh *userHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var form *loginForm
-	if err := readJson(r, &form); err != nil {
-		writeJson(w, err, http.StatusUnprocessableEntity)
+	email, password, ok := r.BasicAuth()
+	if !ok {
+		writeJson(w, "Please provide authentication details", http.StatusUnauthorized)
+		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
 		return
 	}
-	user, err := uh.UserService.Authenticate(form.Email, form.Password)
+	user, err := uh.UserService.Authenticate(email, password)
 	if err != nil {
-		writeJson(w, err, http.StatusBadRequest)
+		// If user not found or password is invalid return a general authentication error so
+		// validity of email is not exposed. Otherwise return error.
+		if errors.Is(err, goafweb.ErrNotFound) || errors.Is(err, goafweb.ErrPWInvalid) {
+			writeJson(w, goafweb.ErrAuth, http.StatusUnauthorized)
+			w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
+			return
+		}
+		writeJson(w, err, http.StatusUnauthorized)
+		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
 		return
 	}
+	// Authentication okay - issue new rememberToken
 	if err := uh.login(w, user); err != nil {
 		writeJson(w, err, http.StatusInternalServerError)
 		return
 	}
-
-	writeJson(w, user, http.StatusOK)
+	// TODO: Implement this as an oauth2 token?
+	writeJson(w, user.RememberToken, http.StatusOK)
 }
 
-// login is a helper function to issue the user with a RememberToken via a http.Cookie and store the hashed token in the database.
-// TODO: implement JTW
+// login is a helper function to set tokens once the user has been authenticated.
+// It issues the user with a RememberToken and stores the hashed token in the database.
+// The token can then be issued to the user by the function that calls login().
 func (uh *userHandler) login(w http.ResponseWriter, user *goafweb.User) error {
 	if user.RememberToken == "" {
 		token, err := rand.RememberToken()
@@ -85,37 +99,14 @@ func (uh *userHandler) login(w http.ResponseWriter, user *goafweb.User) error {
 			return fmt.Errorf("Could not login: %w", err)
 		}
 	}
-
-	rememberCookie := http.Cookie{
-		Name:     "rememberToken",
-		Value:    user.RememberToken,
-		Path:     "/",
-		Expires:  time.Now().Add(24 * time.Hour),
-		HttpOnly: true,
-		//	Secure:   true,
-	}
-	http.SetCookie(w, &rememberCookie)
 	return nil
 }
 
 // Logout logs a user out, removing any existing sessions/tokens
 // GET /logout
-// TODO: Update for JWT.
 func (uh *userHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	// Expire old cookie
-	cookie := &http.Cookie{
-		Name:     "rememberToken",
-		Value:    "",
-		Path:     "/",
-		Expires:  time.Now(),
-		HttpOnly: true,
-	}
-	// Set expired cookie to log user out.
-	http.SetCookie(w, cookie)
-
-	// Set new rememberToken and update db.
-	// If for any reason old cookie persists, it will not match database RememberToken.
-
+	// Set a new rememberToken and updates db.
+	// This prevents user from being able to use any exisiting tokens as it will not match database RememberToken.
 	token, _ := rand.RememberToken()
 	user := context.GetUser(r.Context())
 

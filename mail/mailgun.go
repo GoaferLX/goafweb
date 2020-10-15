@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/mailgun/mailgun-go"
+	"github.com/mailgun/mailgun-go/v4"
 )
 
 type mailService struct {

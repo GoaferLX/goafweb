@@ -56,6 +56,7 @@ func (mw *jsonAuthMW) RequireUser(next http.HandlerFunc) http.HandlerFunc {
 		user := context.GetUser(r.Context())
 		if user == nil {
 			w.WriteHeader(http.StatusUnauthorized)
+			w.Header().Set("WWW-Authenticate", "Bearer realm=\"Access to goafweb\"")
 			return
 		}
 		next.ServeHTTP(w, r)
