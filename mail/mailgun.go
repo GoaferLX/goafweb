@@ -13,11 +13,6 @@ import (
 type mailService struct {
 	mg mailgun.Mailgun
 }
-type ContactForm struct {
-	Email   string `schema:"email"`
-	Subject string `schema:"subject"`
-	Message string `schema:"message"`
-}
 
 func NewMailService(domain, apiKey string) goafweb.MailService {
 	mgclient := mailgun.NewMailgun(domain, apiKey)
