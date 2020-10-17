@@ -26,8 +26,7 @@ func NewApp(auth middleware.AuthMW, uh *userHandler, ah *articleHandler, r *mux.
 }
 
 func (a *app) routes() {
-	router := a.router
-	r := router.PathPrefix("/api/").Subrouter()
+	r := a.router
 	r.Use(a.authMW.CheckUser)
 	// /api/user
 	r.HandleFunc("/user", a.authMW.RequireUser(a.users.Create)).Methods(http.MethodPost)

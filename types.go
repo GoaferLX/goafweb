@@ -45,18 +45,6 @@ type UserDB interface {
 	Update(user *User) error
 }
 
-// Article defines a single Article as stored in the database.
-// Can be used to model a news article or short blog post.
-type Article struct {
-	ID        int
-	Title     string `gorm:"not_null"`
-	Content   string `gorm:"not_null"`
-	Author    int    `gorm:"not_null"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
-}
-
 // PwReset defines how a reset entity is stored in the database.
 type PwReset struct {
 	ID        int
@@ -73,6 +61,18 @@ type PwResetDB interface {
 	GetByToken(token string) (*PwReset, error)
 	Create(pwr *PwReset) error
 	Delete(id int) error
+}
+
+// Article defines a single Article as stored in the database.
+// Can be used to model a news article or short blog post.
+type Article struct {
+	ID        int
+	Title     string `gorm:"not_null"`
+	Content   string `gorm:"not_null"`
+	Author    int    `gorm:"not_null"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
 }
 
 // ArticleService defines the API for interacting with an Article.

@@ -36,8 +36,7 @@ func main() {
 		log.Fatalf("Could not initiate database tables: %s", err)
 	}
 
-	router := mux.NewRouter().StrictSlash(true)
-
+	router := mux.NewRouter().StrictSlash(true).PathPrefix("/api/").Subrouter()
 	handlers.NewApp(
 		middleware.NewJsonAuthMW(services.UserService),
 		handlers.NewUsers(services.UserService, services.MailService),
@@ -47,6 +46,5 @@ func main() {
 	server := &http.Server{Handler: router, Addr: fmt.Sprintf(":%d", cfg.Port)}
 	log.Printf("Server listening on port: %d", cfg.Port)
 	log.Fatal(server.ListenAndServe())
-	//log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), authMW.CheckUser(r)))
 
 }
