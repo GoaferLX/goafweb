@@ -1,3 +1,6 @@
+/*
+Package mail handles sending mail using third party mailgun.
+*/
 package mail
 
 import (
@@ -14,6 +17,8 @@ type mailService struct {
 	mg mailgun.Mailgun
 }
 
+// NewMailService returns a service implementing mailgun that fulfils
+// goafweb.MailService interface.
 func NewMailService(domain, apiKey string) goafweb.MailService {
 	mgclient := mailgun.NewMailgun(domain, apiKey)
 	mgclient.SetAPIBase(mailgun.APIBaseEU)
@@ -55,6 +60,7 @@ If you didn't request a password reset you can safely ignore this email and your
 All the best,<br />
 Leanne @ Leanne's Bowtique`
 
+// ResetPW sends a reset token to the user provided email address.
 func (ms *mailService) ResetPw(toEmail, token string) error {
 	v := url.Values{}
 	v.Set("token", token)

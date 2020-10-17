@@ -20,6 +20,7 @@ type User struct {
 	DeletedAt     *time.Time
 }
 
+// String retrns a User as a human readable value.
 func (u User) String() string {
 	return fmt.Sprintf("Welcome %s", u.Name)
 }
@@ -67,19 +68,19 @@ type PwReset struct {
 	DeletedAt *time.Time
 }
 
-// PwResetDB defines database interactions for a PwReset.
+// PwResetDB defines all database interactions for a PwReset.
 type PwResetDB interface {
 	GetByToken(token string) (*PwReset, error)
 	Create(pwr *PwReset) error
 	Delete(id int) error
 }
 
-// Defines API for interacting with an Article.
+// ArticleService defines the API for interacting with an Article.
 type ArticleService interface {
 	ArticleDB
 }
 
-// Defines all database interactions for a single article.
+// ArticleDB defines all database interactions for a single article.
 type ArticleDB interface {
 	// Standard CRUD actions.
 	// Read - Methods for querying an Article.
@@ -90,6 +91,7 @@ type ArticleDB interface {
 	Delete(id int) error
 }
 
+// MailService defines the interface for sending mail to a User.
 type MailService interface {
 	ResetPw(toEmail, token string) error
 }

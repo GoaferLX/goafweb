@@ -14,6 +14,7 @@ type userService struct {
 	PwPepper  string
 }
 
+// NewUserService returns a userService that implements the UserService interface.
 func NewUserService(userDB UserDB, pwrDB PwResetDB, pwPepper string) UserService {
 	return &userService{
 		UserDB:    userDB,

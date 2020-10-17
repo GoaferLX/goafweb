@@ -10,6 +10,8 @@ type articleDB struct {
 	gorm *gorm.DB
 }
 
+// NewArticleDB returns a new service that implements a gorm database connection
+// that fulfils goafweb.ArticleDB interface.
 func NewArticleDB(db *gorm.DB) goafweb.ArticleDB {
 	return &articleDB{
 		gorm: db,

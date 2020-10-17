@@ -50,10 +50,10 @@ func WithUsers(userPwPepper, hmacSecretKey string) serviceOpts {
 	return func(services *Services) error {
 		hmac := hash.NewHMAC(hmacSecretKey)
 		udb := storage.NewUserDB(services.gorm)
-		v := validation.NewUserValidator(udb, hmac, userPwPepper)
+		uv := validation.NewUserValidator(udb, hmac, userPwPepper)
 		pwrdb := storage.NewPwResetDB(services.gorm)
 		pwrv := validation.NewPwResetValidator(pwrdb, hmac)
-		us := goafweb.NewUserService(v, pwrv, userPwPepper)
+		us := goafweb.NewUserService(uv, pwrv, userPwPepper)
 		services.UserService = us
 		return nil
 	}
