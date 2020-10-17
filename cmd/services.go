@@ -53,7 +53,7 @@ func WithUsers(userPwPepper, hmacSecretKey string) serviceOpts {
 		v := validation.NewUserValidator(udb, hmac, userPwPepper)
 		pwrdb := storage.NewPwResetDB(services.gorm)
 		pwrv := validation.NewPwResetValidator(pwrdb, hmac)
-		us := storage.NewUserService(v, pwrv, userPwPepper)
+		us := goafweb.NewUserService(v, pwrv, userPwPepper)
 		services.UserService = us
 		return nil
 	}
