@@ -4,8 +4,10 @@ package main
 import (
 	"fmt"
 	"goafweb"
+	"goafweb/hash"
 	"goafweb/mail"
 	"goafweb/storage"
+	"goafweb/validation"
 
 	"github.com/jinzhu/gorm"
 )
@@ -44,9 +46,15 @@ func WithGorm(dialect, dsn string, prod bool) serviceOpts {
 }
 
 // Loads user service, allows user functionality as defined by UserInterface//
-func WithUsers(pepper, hmackey string) serviceOpts {
+func WithUsers(userPwPepper, hmacSecretKey string) serviceOpts {
 	return func(services *Services) error {
-		services.UserService = storage.NewUserService(services.gorm, pepper, hmackey)
+		hmac := hash.NewHMAC(hmacSecretKey)
+		udb := storage.NewUserDB(services.gorm)
+		v := validation.NewUserValidator(udb, hmac, userPwPepper)
+		pwrdb := storage.NewPwResetDB(services.gorm)
+		pwrv := validation.NewPwResetValidator(pwrdb, hmac)
+		us := storage.NewUserService(v, pwrv, userPwPepper)
+		services.UserService = us
 		return nil
 	}
 }
@@ -55,10 +63,13 @@ func WithUsers(pepper, hmackey string) serviceOpts {
 // Used for blogs/news sections
 func WithArticles() serviceOpts {
 	return func(services *Services) error {
-		services.ArticleService = storage.NewArticleService(services.gorm)
+		adb := storage.NewArticleDB(services.gorm)
+		av := validation.NewArticleValidator(adb)
+		services.ArticleService = av
 		return nil
 	}
 }
+
 func WithMail(domain, apiKey string) serviceOpts {
 	return func(services *Services) error {
 		services.MailService = mail.NewMailService(domain, apiKey)

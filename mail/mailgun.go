@@ -2,14 +2,9 @@ package mail
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"goafweb"
-	"log"
-	"net/http"
 	"net/url"
-	"regexp"
 	"time"
 
 	"github.com/mailgun/mailgun-go/v4"
@@ -30,43 +25,6 @@ func NewMailService(domain, apiKey string) goafweb.MailService {
 	return &mailService{
 		mg: mgclient,
 	}
-}
-func (ms *mailService) Contact(w http.ResponseWriter, r *http.Request) {
-	var form ContactForm
-	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(err)
-		return
-	}
-
-	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,16}$`)
-	if !emailRegex.MatchString(form.Email) {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(errors.New("Not a valid email"))
-		return
-	}
-	filterRegex := regexp.MustCompile(`@leannesbowtique.com`)
-	if filterRegex.MatchString(form.Email) {
-		log.Print("Tried sending email from own domain")
-		return
-	}
-
-	msg := ms.mg.NewMessage(form.Email, fmt.Sprint("LB Enquiry: "+form.Subject), form.Message, "leanne@leannesbowtique.com")
-	msg.AddBCC("support@leannesbowtique.com")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	_, _, err := ms.mg.Send(ctx, msg)
-
-	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(err)
-		return
-
-	}
-	w.WriteHeader(http.StatusOK)
 }
 
 const (

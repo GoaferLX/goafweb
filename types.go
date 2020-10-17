@@ -1,6 +1,7 @@
 package goafweb
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -17,6 +18,10 @@ type User struct {
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	DeletedAt     *time.Time
+}
+
+func (u User) String() string {
+	return fmt.Sprintf("Welcome %s", u.Name)
 }
 
 // UserService defines the API for interacting with a User.
@@ -37,6 +42,22 @@ type UserDB interface {
 	// Methods for altering a user.
 	Create(user *User) error
 	Update(user *User) error
+}
+
+type PwReset struct {
+	ID        int
+	UserID    int    `gorm:"not null"`
+	Token     string `gorm:"-"`
+	TokenHash string `gorm:"not null;unique_index"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
+}
+
+type PwResetDB interface {
+	GetByToken(token string) (*PwReset, error)
+	Create(pwr *PwReset) error
+	Delete(id int) error
 }
 
 // Article defines a single Article as stored in the database.
@@ -60,8 +81,7 @@ type ArticleService interface {
 type ArticleDB interface {
 	// Standard CRUD actions.
 	// Read - Methods for querying an Article.
-	GetArticleByID(id int) (*Article, error)
-	GetArticlesByUser(id int) ([]Article, error)
+	GetByID(id int) (*Article, error)
 	// Methods for altering an Article.
 	Create(article *Article) error
 	Update(article *Article) error

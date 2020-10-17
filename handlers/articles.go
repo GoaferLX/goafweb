@@ -26,7 +26,7 @@ func (ah *articleHandler) View(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 
-	article, err := ah.ArticlesService.GetArticleByID(id)
+	article, err := ah.ArticlesService.GetByID(id)
 	if err != nil {
 		if errors.Is(err, goafweb.ErrNotFound) {
 			writeJson(w, err, http.StatusNotFound)
