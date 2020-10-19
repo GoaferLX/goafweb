@@ -25,6 +25,7 @@ func writeJson(w http.ResponseWriter, data interface{}, code int) {
 	}
 }
 
+// readJson is a helper method to read a JSON request.
 func readJson(r *http.Request, dest interface{}) error {
 	if header := r.Header.Get("Content-Type"); header != "" {
 		if header != "application/json" {
