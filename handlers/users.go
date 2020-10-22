@@ -66,12 +66,11 @@ func (uh *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// If user not found or password is invalid return a general authentication error so
 		// validity of email is not exposed. Otherwise return error.
+		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
 		if errors.Is(err, goafweb.ErrNotFound) || errors.Is(err, goafweb.ErrPWInvalid) {
-			w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
 			writeJson(w, goafweb.ErrAuth, http.StatusUnauthorized)
 			return
 		}
-		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
 		writeJson(w, err, http.StatusUnauthorized)
 		return
 	}
