@@ -19,7 +19,7 @@ type pwResetValidator struct {
 // It must receive something that satisfies the PwResetDB interface to satisfy
 // the next layer of the interface. As well as any other arguments required for
 // validation.
-func NewPwResetValidator(pwrDB goafweb.PwResetDB, hmac hash.HMAC) goafweb.PwResetDB {
+func NewPwResetValidator(pwrDB goafweb.PwResetDB, hmac hash.HMAC) *pwResetValidator {
 	return &pwResetValidator{
 		PwResetDB: pwrDB,
 		hmac:      hmac,

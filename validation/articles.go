@@ -17,7 +17,7 @@ type articleValidator struct {
 // It must receive something that satisfies the ArticleDB interface to satisfy
 // the next layer of the interface. As well as any other arguments required for
 // validation.
-func NewArticleValidator(articleDB goafweb.ArticleDB) goafweb.ArticleDB {
+func NewArticleValidator(articleDB goafweb.ArticleDB) *articleValidator {
 	return &articleValidator{
 		ArticleDB: articleDB,
 	}

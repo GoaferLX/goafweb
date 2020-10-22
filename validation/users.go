@@ -24,7 +24,7 @@ type userValidator struct {
 // It must receive something that satisfies the UserDB interface to satisfy
 // the next layer of the interface. As well as any other arguments required for
 // validation.
-func NewUserValidator(userDB goafweb.UserDB, hmac hash.HMAC, userPwPepper string) goafweb.UserDB {
+func NewUserValidator(userDB goafweb.UserDB, hmac hash.HMAC, userPwPepper string) *userValidator {
 	return &userValidator{
 		UserDB:   userDB,
 		hmac:     hmac,

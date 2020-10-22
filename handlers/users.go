@@ -58,8 +58,8 @@ func (uh *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (uh *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 	email, password, ok := r.BasicAuth()
 	if !ok {
-		writeJson(w, "Please provide authentication details", http.StatusUnauthorized)
 		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
+		writeJson(w, "Please provide authentication details", http.StatusUnauthorized)
 		return
 	}
 	user, err := uh.UserService.Authenticate(email, password)
@@ -67,12 +67,12 @@ func (uh *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 		// If user not found or password is invalid return a general authentication error so
 		// validity of email is not exposed. Otherwise return error.
 		if errors.Is(err, goafweb.ErrNotFound) || errors.Is(err, goafweb.ErrPWInvalid) {
-			writeJson(w, goafweb.ErrAuth, http.StatusUnauthorized)
 			w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
+			writeJson(w, goafweb.ErrAuth, http.StatusUnauthorized)
 			return
 		}
-		writeJson(w, err, http.StatusUnauthorized)
 		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access to goafweb\"")
+		writeJson(w, err, http.StatusUnauthorized)
 		return
 	}
 	// Authentication okay - issue new rememberToken

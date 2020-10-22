@@ -15,7 +15,7 @@ type userService struct {
 }
 
 // NewUserService returns a userService that implements the UserService interface.
-func NewUserService(userDB UserDB, pwrDB PwResetDB, pwPepper string) UserService {
+func NewUserService(userDB UserDB, pwrDB PwResetDB, pwPepper string) *userService {
 	return &userService{
 		UserDB:    userDB,
 		pwResetDB: pwrDB,

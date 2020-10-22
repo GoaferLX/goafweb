@@ -22,7 +22,7 @@ type jsonAuthMW struct {
 	UserService goafweb.UserService
 }
 
-func NewJsonAuthMW(us goafweb.UserService) AuthMW {
+func NewJsonAuthMW(us goafweb.UserService) *jsonAuthMW {
 	return &jsonAuthMW{
 		UserService: us,
 	}

@@ -12,7 +12,7 @@ type pwResetDB struct {
 
 // NewPwResetDB returns a new service that implements a gorm database connection
 // that fulfils goafweb.PwResetDB interface.
-func NewPwResetDB(db *gorm.DB) goafweb.PwResetDB {
+func NewPwResetDB(db *gorm.DB) *pwResetDB {
 	return &pwResetDB{
 		gorm: db,
 	}

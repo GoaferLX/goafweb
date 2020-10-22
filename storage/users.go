@@ -19,7 +19,7 @@ type userDB struct {
 
 // NewUserDB returns a new service that implements a gorm database connection
 // that fulfils goafweb.UserDB interface.
-func NewUserDB(db *gorm.DB) goafweb.UserDB {
+func NewUserDB(db *gorm.DB) *userDB {
 	return &userDB{
 		gorm: db,
 	}

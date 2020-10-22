@@ -10,7 +10,7 @@ type authMW struct {
 	UserService goafweb.UserService
 }
 
-func NewAuthMW(us goafweb.UserService) AuthMW {
+func NewAuthMW(us goafweb.UserService) *authMW {
 	return &authMW{
 		UserService: us,
 	}

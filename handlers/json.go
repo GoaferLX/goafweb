@@ -9,7 +9,6 @@ import (
 
 // writeJSON is a helper function for writing a JSON response to http.ResponseWriter.
 func writeJson(w http.ResponseWriter, data interface{}, code int) {
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
 	switch data := data.(type) {
 	case error:
@@ -23,6 +22,7 @@ func writeJson(w http.ResponseWriter, data interface{}, code int) {
 		}
 		w.Write(stream)
 	}
+	w.WriteHeader(code)
 }
 
 // readJson is a helper method to read a JSON request.
