@@ -30,6 +30,7 @@ func (a *app) routes() {
 	r.Use(a.authMW.CheckUser)
 	// /api/user
 	r.HandleFunc("/user", a.authMW.RequireUser(a.users.Create)).Methods(http.MethodPost)
+	r.HandleFunc("/signup",a.users.Create).Methods("POST")
 	r.HandleFunc("/login", a.users.Login).Methods("POST")
 	r.HandleFunc("/logout", a.users.Logout).Methods("GET")
 	r.HandleFunc("/forgot", a.users.Forgot).Methods("POST")

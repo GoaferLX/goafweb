@@ -11,7 +11,7 @@ type User struct {
 	ID            int    `gorm:"primary_key;"`
 	Name          string `gorm:"not_null;"`
 	Email         string `gorm:"not_null;unique_index;" json:"email"`
-	Password      string `gorm:"-" json:"-"`
+	Password      string `gorm:"-" `
 	PasswordHash  string `gorm:"not_null;"`
 	RememberToken string `gorm:"-"`
 	RememberHash  string `gorm:"not_null;unique_index;"`

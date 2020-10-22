@@ -85,7 +85,7 @@ type dbConfig struct {
 func defaultDBConfig() dbConfig {
 	return dbConfig{
 		User:    "root",
-		Passwd:  "",
+		Passwd:  "root",
 		Net:     "tcp",
 		Host:    "localhost",
 		Port:    3306,
